@@ -18,5 +18,5 @@ dev = ["pytest>=8", "pytest-xdist>=3"]      # pytest-xdist: run the tests in par
 [tool.pytest.ini_options]
 testpaths = ["tests", "mini"]
 pythonpath = ["."]
-addopts = "--doctest-modules"
+addopts = "--doctest-modules -m 'not naive'"   # NAIVE-002 is red by design: left out unless run with -m naive
 markers = ["naive: every guard off, the attacks turn red by design; run it on purpose with -m naive"]
