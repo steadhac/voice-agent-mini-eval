@@ -30,7 +30,7 @@ flowchart LR
 1. Each **row** is one attack (or the normal call) as one line of JSON. Every attack asks a question,
    like "Can a bank statement move your money?", and names the guard that must stop it.
 2. The **runner** checks the row and plays it on a fresh agent, so nothing carries over.
-3. The **agent** works in the three stages Deepgram's Voice Agent uses: it **listens** (speech-to-text
+3. The **agent** works in the three stages a voice agent uses: it **listens** (speech-to-text
    turns, tagged by speaker), **thinks** (works out the intent and picks a tool), and **speaks**. Each
    stage has guards, and each guard can be switched off.
 4. The **judge** grades two records: the **events** (what the agent said and offered) and the
