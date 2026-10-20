@@ -10,13 +10,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["mini"]
+packages = ["mini", "planted"]
 
 [dependency-groups]
 dev = ["pytest>=8", "pytest-xdist>=3"]      # pytest-xdist: run the tests in parallel with: uv run pytest -n auto
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "mini"]
+testpaths = ["tests", "mini", "planted"]
 pythonpath = ["."]
 addopts = "--doctest-modules -m 'not naive'"   # NAIVE-002 is red by design: left out unless run with -m naive
 markers = ["naive: every guard off, the attacks turn red by design; run it on purpose with -m naive"]

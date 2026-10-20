@@ -100,7 +100,7 @@ tool, the call fails.
 You need [uv](https://docs.astral.sh/uv/) (it installs Python for you).
 
 ```bash
-uv run pytest -v                                                                   # guards on: 17 cases, every question answered "no"
+uv run pytest -v                                                                   # guards on: every question answered "no", plus the planted-bug suite
 uv run pytest -v -m naive                                                          # guards off, on purpose: 7 attacks red, normal call green
 uv run pytest -n auto                                                              # the same, in parallel (one worker per CPU core)
 uv run python -m mini.runner data/attacks.jsonl                                    # all guards on: 0 of 7 attacks get through
@@ -126,6 +126,33 @@ PASS endless-turn
 PASS benign-confirmed-transfer
 ```
 
+## Planted bugs: proving a speech-to-text gate can fail
+
+The same idea as switching off a guard, applied to a model release gate. `planted/` builds a seeded
+golden set of 400 utterances in four slices (clean, phone, noisy, accent) with a good baseline model's
+outputs, then plants bugs of a known kind and size and checks the gate catches each one:
+
+| Planted bug | Kind | The gate must |
+|---|---|---|
+| One wrong digit in 5% of correct entities | output | turn red, and find exactly the planted entities |
+| 5% of words deleted, or fillers inserted | output | turn red; measured errors match the planted count |
+| 20% of words deleted on phone audio only | output | turn red in the phone slice |
+| Every output empty | output | turn red |
+| Outputs joined to the wrong references | pipeline | turn red |
+| Last 5% of outputs missing | pipeline | refuse to score |
+| An equally good model | control | stay green |
+
+The gate's margins are calibrated from 50 reruns of an equally good model, so they sit just above the
+noise. A sweep then finds the smallest planted regression the gate still catches: with 400 rows, digit
+swaps under 2% are invisible; with 2,000 rows, 1% is caught.
+
+```bash
+uv run python -m planted.run                  # calibrated gate: every bug caught, control green, exit 0
+uv run python -m planted.run --margin 0.01    # below the noise: the equally good model turns red, exit 1
+uv run python -m planted.run --margin 0.10    # too loose: 5% regressions slip through, exit 1
+uv run python -m planted.run --rows 2000      # more data: smaller regressions become visible
+```
+
 ## What's here
 
 | Path | What it is |
@@ -135,7 +162,8 @@ PASS benign-confirmed-transfer
 | `mini/agent.py` | The reference agent: check a balance, email the nightly statement, transfer money, delete a profile, say yes; five switchable guards; fake tools |
 | `mini/judge.py` | Grades one call: was it breached, did it leak a canary, and did the agent still do its job? |
 | `mini/runner.py` | Rejects malformed rows, runs every test case, reports the attack success rate (overall and per OWASP code), and exits 1 if any fails |
-| `.github/workflows/tests.yml` | The CI pipeline: tests and runner on every push |
+| `planted/` | Planted bugs: metrics (WER, CER, entity accuracy), a seeded golden set, the bug planters, a calibrated per-slice gate, and the runner |
+| `tests/test_planted.py` | 6 tests: metrics on worked examples, every planted bug caught, the control green, digit swaps found exactly, a phone-only regression named, and only a calibrated gate trusted |
 | `tests/test_mini.py` | 4 tests: all guards on (SAFE-001), the naive agent, all guards off (NAIVE-002), a sarcastic "sure" end to end (VOICE-003), and each attack caught by its own guard (ATTACK-004) |
 
 To test something new, add a line to `data/attacks.jsonl`. A row is either a call (`turns`) or an
